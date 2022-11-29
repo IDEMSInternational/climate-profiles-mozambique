@@ -11,10 +11,27 @@ mozambique_daily <- MZ2$get_data_frame(data_name = "MZ_stations")
 mozambique_s_daily <- MZ2$get_data_frame(data_name = "MZ_stations_Aug")
 
 temperature_summaries <- mozambique_s_daily %>% 
-  group_by(station, month_abbr) %>%
+  group_by(station, s_year, month_abbr) %>%
   summarise(mean_tmax = mean(Tmax, na.rm=TRUE),
-            mean_tmin = mean(Tmin, na.rm=TRUE))
-
+            mean_tmin = mean(Tmin, na.rm=TRUE)) %>% 
+  pivot_longer(cols = 4:5, names_to = "variable", values_to = "values")
+  for (s in unique(temperature_summaries$station)){ 
+    temperature_summaries %>%
+      filter(station== s)%>%
+      ggplot(aes(x = s_year, y = values, group=variable, color=variable)) +
+      geom_line(size=0.3)+
+      geom_point(size=0.6, color="black")+
+      geom_smooth(method = lm, size=1)+
+      labs(y = "Mean Temperature (°C)")+
+      facet_wrap( ~ month_abbr, ncol = 4)+
+      theme_bw()+
+      xlab("") +
+      theme(legend.position = "right")+
+      scale_color_discrete(labels=c('Mean Tmax', 'Mean Tmin'), name=NULL)
+    ggsave(paste0("../mz_res/monthly_mean_temp/monthly_temp_", s, ".jpeg"), width = 12, height = 8) 
+  }
+    
+    
 mozambique_s_rain_summaries <- MZ2$get_data_frame(data_name = "MZ_stations_Aug_by_station_s_year")
 
 mz_s_sum_precipitaion <- MZ2$get_data_frame("MZ_stations_Aug_by_station_s_year_month_abbr")
