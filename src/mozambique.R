@@ -36,7 +36,17 @@ mozambique_s_rain_summaries <- MZ2$get_data_frame(data_name = "MZ_stations_Aug_b
 
 mz_s_sum_precipitaion <- MZ2$get_data_frame("MZ_stations_Aug_by_station_s_year_month_abbr")
 
-mz_s_sum_precipitaion_summaries <- MZ2$get_data_frame("MZ_stations_Aug_by_station_s_year_month_abbr_by_station_month_abbr")
+#mz_s_sum_precipitaion_summaries <- MZ2$get_data_frame("MZ_stations_Aug_by_station_s_year_month_abbr_by_station_month_abbr")
+
+#median, p10, p90
+mz_s_sum_precipitaion_summaries <- mozambique_s_daily %>%
+  group_by(station, s_year, month_abbr) %>%
+  summarise(sum_Prec = sum(Prec, na.rm = FALSE)) %>%
+  ungroup() %>%
+  group_by(station, month_abbr) %>%
+  summarise(median_sum_Prec = median(sum_Prec, na.rm = TRUE),
+            p10_sum_Prec = quantile(sum_Prec, probs=.1, na.rm=TRUE),
+            p90_sum_Prec = quantile(sum_Prec, probs=.9, na.rm = TRUE))
 
 #Fig 3
 #############################
