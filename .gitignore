@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # data folder, use data locally only
 data/
+
+# output folder, use locally only
+output/
