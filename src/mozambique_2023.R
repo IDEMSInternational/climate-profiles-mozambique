@@ -34,7 +34,7 @@ for (s in unique(temperature_summaries$station)) {
     theme(legend.position = "right") +
     scale_color_discrete(labels = c('Mean Tmax', 'Mean Tmin'), name = NULL) +
     scale_x_continuous(breaks = seq(10, 40, 10))
-  ggsave(here("output", paste0("figure_2_mean_monthly_temp_", s, ".png")),
+  ggsave(here("output", paste0("a.figure_2_mean_monthly_temp_", s, ".png")),
          g, width = 12, height = 8)
 }
 
@@ -61,11 +61,25 @@ for (s in unique(mz_s_sum_precipitaion_summaries$station)){
     theme_grey() +
     xlab("") +
     ylab("Monthly Total Rainfall (mm)")
-  ggsave(here("output", paste0("figure_3_monthly_rainfall_totals_", s, ".png")), 
+  ggsave(here("output", paste0("b.figure_3_monthly_rainfall_totals_", s, ".png")), 
          g, width = 12, height = 8)
 }
 
 # Figure 4: Rainy season start dates
+
+theme_annual <- theme(
+  panel.grid.major = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
+  panel.grid.minor = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
+  panel.border = element_rect(colour = "black", fill = "NA", linewidth = 0),
+  axis.text.x = element_text(angle = 90, size = 12, vjust = 0.4),
+  axis.title.x = element_text(size = 14),
+  axis.title.y = element_text(size = 14),
+  title = element_text(size = 20),
+  plot.subtitle = element_text(size = 15),
+  plot.caption = element_text(size = 8),
+  axis.text.y = element_text(size = 12),
+  panel.background = element_rect(colour = "white", fill = "white", linewidth = 0.5, linetype = "solid")
+  )
 
 start_of_rains_dry <- mozambique_s_daily %>% 
   group_by(station) %>%
@@ -97,27 +111,18 @@ for (s in unique(start_of_rains_dry_with_mean_y$station)) {
     geom_hline(mapping = aes(yintercept = .mean_y), linewidth = 1.5) + 
     geom_label(mapping = aes(x = -Inf, y = .mean_y,
                              label = paste("Mean:", format(x = .mean_y, format = "%d %b"))), hjust = 0, vjust = -0.3) + 
-    theme(panel.grid.major = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.grid.minor = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.border = element_rect(colour = "black", fill = "NA", linewidth = 0),
-          axis.text.x = element_text(angle = 90, size = 12, vjust = 0.4),
-          axis.title.x = element_text(size = 14),
-          axis.title.y = element_text(size = 14),
-          title = element_text(size = 20),
-          plot.subtitle = element_text(size = 15),
-          plot.caption = element_text(size = 8),
-          axis.text.y = element_text(size = 12),
-          panel.background = element_rect(colour = "white", fill = "white", linewidth = 0.5, linetype = "solid")) + 
+    theme_annual + 
     xlab(label = "") + 
     ylab(label = "Start date") + 
     labs(caption = "First occurance from 1 Nov with more than 20mm in 3 days and no 10 day dry spell in the next 21 days.") +
     scale_y_date(date_labels = "%d %b", date_breaks ="1 months") +
     scale_x_continuous(breaks = seq(1900, 2022, 4))
-  ggsave(here("output", paste0("figure_4_start_rains_", s, ".png")), 
+  ggsave(here("output", paste0("c.figure_4_start_rains_", s, ".png")), 
          g, width = 12, height = 8)
 }
 
 # Figure 4: Rainy season end date
+
 end_of_rains <- mozambique_s_daily %>%
   group_by(station) %>%
   mutate(roll_sum_rain = RcppRoll::roll_sumr(x = Prec, n = 1, fill = NA, na.rm = FALSE)) %>%
@@ -158,24 +163,14 @@ for (s in unique(end_season_with_mean_y$station)) {
     geom_label(mapping = aes(x = -Inf, y = .mean_y,
                              label = paste("Mean:", format(x = .mean_y, format = "%d %b"))),
                hjust = 0, vjust = -0.3) + 
-    theme(panel.grid.major=element_line(colour="lightblue", linetype="longdash", linewidth=1),
-          panel.grid.minor = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.border = element_rect(colour = "black", fill = "NA", size = 0),
-          axis.text.x = element_text(angle = 90, size = 12, vjust = 0.4),
-          axis.title.x = element_text(size = 14), 
-          axis.title.y= element_text(size = 14),
-          title = element_text(size = 20), 
-          plot.subtitle = element_text(size = 15),
-          plot.caption = element_text(size = 8), 
-          axis.text.y = element_text(size = 12),
-          panel.background = element_rect(colour = "white", fill = "white", linewidth = 0.5, linetype = "solid")) + 
+    theme_annual + 
     xlab(label = "") + 
     ylab(label = "End date") + 
     labs(caption = "First occasion from the last rainfall of more than 10mm with empty water balance.\n 
          Capacity is 120mm and evaporation is taken as 5mm per day.") +
     scale_y_date(date_labels = "%d %b", date_breaks = "1 months") + 
     scale_x_continuous(breaks = seq(1950, 2022, 4))
-  ggsave(here("output", paste0("figure_4_end_season_", s, ".png")), 
+  ggsave(here("output", paste0("d.figure_4_end_season_", s, ".png")), 
          g, width = 12, height = 8)
 }
 
@@ -196,24 +191,14 @@ for (s in unique(length_season_with_mean_y$station)) {
     geom_line(colour = "blue", linewidth = 0.8) + geom_point(size = 3, colour = "red") + 
     geom_hline(mapping = aes(yintercept = .mean_y), linewidth = 1.5) + 
     geom_label(mapping = aes(x = -Inf, y = .mean_y, label = paste("Mean:", round(.mean_y))), hjust = 0, vjust = -0.3) + 
-    theme(panel.grid.major = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.grid.minor = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.border = element_rect(colour = "black", fill = "NA", linewidth = 0), 
-          axis.text.x = element_text(angle = 90, size = 12, vjust = 0.4), 
-          axis.title.x = element_text(size = 14), 
-          axis.title.y = element_text(size = 14), 
-          title = element_text(size = 20), 
-          plot.subtitle = element_text(size = 15), 
-          plot.caption = element_text(size = 8), 
-          axis.text.y = element_text(size = 12), 
-          panel.background = element_rect(colour = "white", fill = "white", linewidth = 0.5, linetype = "solid")) + 
+    theme_annual + 
     xlab(label = "") + 
     ylab(label = "Length of Season") + 
     labs(caption = "Season length: Number of days from start of rains date to end of season date.") +
     scale_x_continuous(breaks = seq(1970, 2018, 4)) + 
     scale_y_continuous(limits = c(0, 240), expand = expansion(mult = c(0,0)), 
                                 breaks = seq(0, 200, 50))  
-  ggsave(here("output", paste0("figure_4_length_season_", s, ".png")), 
+  ggsave(here("output", paste0("e.figure_4_length_season_", s, ".png")), 
          g, width = 12, height = 8)
 }
 
@@ -238,26 +223,74 @@ for (s in unique(total_rainfall_with_mean_y$station)) {
     geom_point(size = 3, colour = "red") + 
     geom_hline(mapping = aes(yintercept = .mean_y), linewidth = 1.5) + 
     geom_label(mapping = aes(x = -Inf, y = .mean_y, label = paste("Mean:", round(.mean_y))), hjust = 0, vjust = -0.3) + 
-    theme(panel.grid.major = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.grid.minor = element_line(colour = "lightblue", linetype = "longdash", linewidth = 1),
-          panel.border = element_rect(colour = "black", fill = "NA", linewidth = 0),
-          axis.text.x = element_text(angle = 90, size = 12, vjust = 0.4),
-          axis.title.x = element_text(size = 14),
-          axis.title.y = element_text(size = 14),
-          title = element_text(size = 20),
-          plot.subtitle = element_text(size = 15),
-          plot.caption = element_text(size = 8),
-          axis.text.y = element_text(size = 12),
-          panel.background = element_rect(colour = "white", fill = "white", linewidth = 0.5, linetype = "solid")) + 
+    theme_annual + 
     xlab(label = "") + 
     ylab(label = "Seasonal total rainfall (mm)") + 
     labs(caption = "Seasonal rainfall: Total rainfall between the start of rains and the end of the season.") +
     scale_x_continuous(breaks = seq(1900, 2022, 4)) + 
     scale_y_continuous(breaks = seq(0, 2500, 100))
-  ggsave(here("output", paste0("figure_5_total_seasonal_rain_", s, ".png")),
+  ggsave(here("output", paste0("f.figure_5_total_seasonal_rain_", s, ".png")),
          g, width = 12, height = 8)
 }
 
+# Figure 6: Largest 5-day rainfall per year 1 Jan - 31 March
+
+max_5sum_rain <- combined_rain_summaries %>% 
+  left_join((mozambique_s_daily %>%
+               filter(s_doy >= 154 & s_doy <= 244) %>% 
+               group_by(station) %>%
+               mutate(sum_5day = RcppRoll::roll_sumr(x = Prec, n = 5, fill = NA, na.rm = FALSE)) %>%
+               group_by(s_year, .add = TRUE) %>% 
+               summarise(max_sum_5day = max(sum_5day, na.rm = FALSE))), 
+            by = c("station", "s_year"), suffix = c("", ""))
+
+max_5d_total_rainfall_with_mean_y <- max_5sum_rain %>% 
+  group_by(station) %>% dplyr::mutate(.mean_y=mean(x=max_sum_5day, na.rm=TRUE))
+
+for (s in unique(max_5d_total_rainfall_with_mean_y$station)) {
+  g <- max_5d_total_rainfall_with_mean_y %>% filter(station == s) %>%
+    ggplot(mapping = aes(x = s_year, y = as.numeric(max_sum_5day))) + 
+    geom_line(colour = "blue", linewidth = 0.8) + 
+    geom_point(size = 3, colour = "red") + 
+    geom_hline(mapping = aes(yintercept = .mean_y), linewidth = 1.5) + 
+    geom_label(mapping = aes(x = -Inf, y = .mean_y, label = paste("Mean:", round(.mean_y))), hjust = 0, vjust = -0.3) + 
+    theme_annual + 
+    xlab(label = "") + 
+    ylab(label = "Maximum 5-day total") + 
+    labs(caption = "Largest 5-day rainfall total between 1 January and 31 March.") +
+    scale_x_continuous(breaks = seq(1900, 2022, 4)) + 
+    scale_y_continuous(breaks = seq(0, 500, 50))
+  ggsave(here("output", paste0("g.figure_6_max_5d_total_rain_", s, ".png")), 
+         g, width = 12, height = 8)
+}
+
+# Figure 7: Chances of receiving 450mm and 600mm of rainfall within 100 days for different planting dates
+
+prec_100_day <- mozambique_s_daily %>%
+  group_by(station) %>%
+  mutate(sum_100day = RcppRoll::roll_suml(x = Prec, n = 100, fill = NA, na.rm = FALSE)) %>%
+  group_by(station, s_doy) %>%
+  summarise(`450mm` = sum(sum_100day >= 450, na.rm = TRUE)/n(),
+            `600mm` = sum(sum_100day >= 600, na.rm = TRUE)/n())
+
+prec_100_day_stack <- prec_100_day %>%
+  pivot_longer(cols = c(`450mm`, `600mm`), names_to = "variable", values_to = "values", 
+               names_ptypes = factor(levels = c("450mm", "600mm")))
+
+for (s in unique(prec_100_day_stack$station)) {
+  g <- prec_100_day_stack %>% filter(station == s & s_doy >= 32 & s_doy <= 275) %>%
+    ggplot(mapping = aes(x = as.Date(s_doy, origin = "2015-07-31"), y = values, colour = variable)) + 
+    geom_smooth(span = 0.3, se = FALSE, method = "loess") + 
+    xlab(label = "") + 
+    ylab(label = "") + 
+    scale_x_date(date_labels = "%d %b", date_breaks = "1 months") + 
+    scale_y_continuous(labels = scales::percent, limits = c(0, 1), breaks = seq(0, 1, 0.1)) +
+    labs(colour = "")
+  ggsave(here("output", paste0("h.figure_7_100d_total_rain_", s, ".png")), 
+         g, width = 12, height = 8)
+}
+
+# TODO Do these as one table
 
 # Table 4: Maximum temperatures exceeding 40C, 42C, 44C (at any point) in November to January
 
@@ -273,7 +306,21 @@ max_temp_probs <- mozambique_s_daily %>%
             prob_max_temp_42 = sum(max_temp_42, na.rm = TRUE)/n(),
             prob_max_temp_44 = sum(max_temp_44, na.rm = TRUE)/n())
 
-write.csv(max_temp_probs, here("output", "max_temp_exceed_nov_jan.csv"), 
+write.csv(max_temp_probs, here("output", "i.table_4_max_temp_exceed_nov_jan.csv"), 
+          row.names = FALSE)
+
+# Table 4: Season start date probabilities and seasonal rainfall
+
+summary_probs <- combined_rain_summaries_2 %>%
+  mutate(start_dec_1 = start_rain_dry >= 123,
+         start_dec_15 = start_rain_dry >= 137,
+         total_rain_700 = total_rain > 700) %>% 
+  group_by(station) %>%
+  summarise(prob_start_dec_1 = sum(start_dec_1, na.rm = TRUE)/n(),
+            prob_start_dec_15 = sum(start_dec_15, na.rm = TRUE)/n(),
+            prob_total_rain_700 = sum(total_rain_700, na.rm = TRUE)/n())
+
+write.csv(summary_probs, here("output", "j.table_4_season_dates_season_rainfall.csv"), 
           row.names = FALSE)
 
 # Table 4: Daily rainfall exceeding 150mm
@@ -285,52 +332,5 @@ max_prec_probs <- mozambique_s_daily %>%
   group_by(station) %>%
   summarise(prob_max_rain_150 = sum(max_rain_150, na.rm = TRUE)/n())
 
-write.csv(max_prec_probs, here("output", "daily_rainfall_exceed_150mm.csv"), 
+write.csv(max_prec_probs, here("output", "k.table_4_daily_rainfall_exceed_150mm.csv"), 
           row.names = FALSE)
-
-
-
-
-summary_probs <- combined_rain_summaries_2 %>%
-  mutate(max_start_dec_1 = (start_rain_dry >= 123)*1,
-         max_start_dec_15 = (start_rain_dry >= 137)*1,
-         total_rain_700 = (total_rain > 700)*1) %>% 
-  group_by(station) %>%
-  summarise(prob_max_start_dec_1 = sum(max_start_dec_1, na.rm = TRUE)/n(),
-            prob_max_start_dec_15 = sum(max_start_dec_15, na.rm = TRUE)/n(),
-            prob_total_rain_700 = sum(total_rain_700, na.rm = TRUE)/n())
-
-
-#Max 5-day rainfall total
-max_5sum_rain <-combined_rain_summaries %>% 
-  left_join((mozambique_s_daily %>% 
-  filter(s_doy >= 154 & s_doy <= 244) %>% 
-  group_by(station) %>%
-  mutate(sum_5day = RcppRoll::roll_sumr(x=Prec, n=5, fill=NA, na.rm=FALSE)) %>%
-  group_by(s_year, .add = TRUE) %>% 
-  summarise(max_sum_5day = max(sum_5day, na.rm = FALSE))), by = c("station", "s_year"), suffix = c("", ""))
-
-all.equal(as.vector(max_5sum_rain$max_sum_5day), as.vector(mozambique_s_rain_summaries$max_sum_5day))
-
-max_5d_total_rainfall_with_mean_y <- mozambique_s_rain_summaries %>% 
-  group_by(station) %>% dplyr::mutate(.mean_y=mean(x=max_sum_5day, na.rm=TRUE))
-for (s in unique(max_5d_total_rainfall_with_mean_y$station)){
-  max_5d_total_rainfall_with_mean_y %>% filter(station == s) %>%
-    ggplot2::ggplot(mapping=ggplot2::aes(y=as.numeric(x=max_sum_5day), x=s_year)) + 
-    ggplot2::geom_line(colour="blue", size=0.8) + ggplot2::geom_point(size=3, colour="red") + 
-    ggplot2::geom_hline(mapping=ggplot2::aes(yintercept=.mean_y), size=1.5) + 
-    ggplot2::geom_label(mapping=ggplot2::aes(x=-Inf, y=.mean_y, label=paste("Mean:", round(.mean_y))), hjust=0, vjust=-0.3) + 
-    ggplot2::theme(panel.grid.major=ggplot2::element_line(colour="lightblue", linetype="longdash", size=1), 
-                   panel.grid.minor=ggplot2::element_line(colour="lightblue", linetype="longdash", size=1), 
-                   panel.border=ggplot2::element_rect(colour="black", fill="NA", size=0), 
-                   axis.text.x=ggplot2::element_text(angle=90, size=12, vjust=0.4), 
-                   axis.title.x=ggplot2::element_text(size=14), 
-                   axis.title.y=ggplot2::element_text(size=14), 
-                   title=ggplot2::element_text(size=20), plot.subtitle=ggplot2::element_text(size=15), 
-                   plot.caption=ggplot2::element_text(size=8), axis.text.y=ggplot2::element_text(size=12), 
-                   panel.background=ggplot2::element_rect(colour="white", fill="white", size=0.5, linetype="solid")) + 
-    ggplot2::xlab(label="") + ggplot2::ylab(label="Maximum 5-day total") + 
-    ggplot2::scale_x_continuous(breaks=seq(from=1900, to=2022, by=4)) + 
-    ggplot2::scale_y_continuous(breaks=seq(from=0, to=500, by=50))
-  ggsave(paste0("../mz_res/max_5d_total/max_5d_total_rain_", s, ".jpeg"), width = 12, height = 8)
-}
