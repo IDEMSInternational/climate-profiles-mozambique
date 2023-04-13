@@ -2,22 +2,19 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(here)
+library(naflex)
 
 source(here("src", "helper_funs.R"))
 
-MZ2 <- readRDS(here("data/Beira_Tete.RDS"))
-
-mozambique_s_daily <- MZ2$get_data_frame(data_name = "moz2")
-
-mozambique_s_daily$month_abbr <- factor(mozambique_s_daily$month_abbr, 
-                                        levels = c(month.abb[8:12], month.abb[1:7]))
+mozambique_s_daily <- readRDS(here("data", "beira_tete_qc.RDS"))
 
 # Figure 2: Mean Monthly Maximum and Minimum Temperatures
-
+# Missing value rule taken from  WMO Guidelines on the Calculation of Climate Normals
+# https://library.wmo.int/doc_num.php?explnum_id=4166 Section 4.4.1 Mean values
 temperature_summaries <- mozambique_s_daily %>% 
   group_by(station, s_year, month_abbr) %>%
-  summarise(mean_tmax = mean(Tmax, na.rm = TRUE),
-            mean_tmin = mean(Tmin, na.rm = TRUE)) %>% 
+  summarise(mean_tmax = mean(Tmax %>% na_omit_if(n = 10, consec = 4)),
+            mean_tmin = mean(Tmin %>% na_omit_if(n = 10, consec = 4))) %>% 
   pivot_longer(cols = 4:5, names_to = "variable", values_to = "values")
 
 for (s in unique(temperature_summaries$station)) {
@@ -33,13 +30,14 @@ for (s in unique(temperature_summaries$station)) {
     xlab("") +
     theme(legend.position = "right") +
     scale_color_discrete(labels = c('Mean Tmax', 'Mean Tmin'), name = NULL) +
-    scale_x_continuous(breaks = seq(10, 40, 10))
+    scale_y_continuous(breaks = seq(10, 40, 10))
   ggsave(here("output", paste0("a.figure_2_mean_monthly_temp_", s, ".png")),
          g, width = 12, height = 8)
 }
 
 # Figure 3: Monthly rainfall totals over the course of 1 year (Aug-Jul): top 10%, median & bottom 10%
-
+# Missing value rule taken from  WMO Guidelines on the Calculation of Climate Normals
+# https://library.wmo.int/doc_num.php?explnum_id=4166 Section 4.4.1 Sum values
 mz_s_sum_precipitaion_summaries <- mozambique_s_daily %>%
   group_by(station, s_year, month_abbr) %>%
   summarise(sum_Prec = sum(Prec, na.rm = FALSE)) %>%
@@ -240,16 +238,16 @@ max_5sum_rain <- combined_rain_summaries %>%
                filter(s_doy >= 154 & s_doy <= 244) %>% 
                group_by(station) %>%
                mutate(sum_5day = RcppRoll::roll_sumr(x = Prec, n = 5, fill = NA, na.rm = FALSE)) %>%
-               group_by(s_year, .add = TRUE) %>% 
+               group_by(s_year, year, .add = TRUE) %>% 
                summarise(max_sum_5day = max(sum_5day, na.rm = FALSE))), 
             by = c("station", "s_year"), suffix = c("", ""))
 
 max_5d_total_rainfall_with_mean_y <- max_5sum_rain %>% 
-  group_by(station) %>% dplyr::mutate(.mean_y=mean(x=max_sum_5day, na.rm=TRUE))
+  group_by(station) %>% dplyr::mutate(.mean_y = mean(x = max_sum_5day, na.rm = TRUE))
 
 for (s in unique(max_5d_total_rainfall_with_mean_y$station)) {
   g <- max_5d_total_rainfall_with_mean_y %>% filter(station == s) %>%
-    ggplot(mapping = aes(x = s_year, y = as.numeric(max_sum_5day))) + 
+    ggplot(mapping = aes(x = year, y = as.numeric(max_sum_5day))) + 
     geom_line(colour = "blue", linewidth = 0.8) + 
     geom_point(size = 3, colour = "red") + 
     geom_hline(mapping = aes(yintercept = .mean_y), linewidth = 1.5) + 
@@ -259,7 +257,7 @@ for (s in unique(max_5d_total_rainfall_with_mean_y$station)) {
     ylab(label = "Maximum 5-day total") + 
     labs(caption = "Largest 5-day rainfall total between 1 January and 31 March.") +
     scale_x_continuous(breaks = seq(1900, 2022, 4)) + 
-    scale_y_continuous(breaks = seq(0, 500, 50))
+    scale_y_continuous(breaks = seq(0, 600, 50))
   ggsave(here("output", paste0("g.figure_6_max_5d_total_rain_", s, ".png")), 
          g, width = 12, height = 8)
 }
@@ -285,19 +283,17 @@ for (s in unique(prec_100_day_stack$station)) {
     ylab(label = "") + 
     scale_x_date(date_labels = "%d %b", date_breaks = "1 months") + 
     scale_y_continuous(labels = scales::percent, limits = c(0, 1), breaks = seq(0, 1, 0.1)) +
-    labs(colour = "")
+    labs(colour = "Total rainfall in 100 days")
   ggsave(here("output", paste0("h.figure_7_100d_total_rain_", s, ".png")), 
          g, width = 12, height = 8)
 }
-
-# TODO Do these as one table
 
 # Table 4: Maximum temperatures exceeding 40C, 42C, 44C (at any point) in November to January
 
 max_temp_probs <- mozambique_s_daily %>%
   filter(s_doy >= 93 & s_doy <= 184) %>% 
   group_by(station, s_year) %>%
-  summarise(max_tmax = max(Tmax, na.rm=TRUE)) %>% 
+  summarise(max_tmax = max(Tmax, na.rm = TRUE)) %>% 
   mutate(max_temp_40 = max_tmax > 40,
          max_temp_42 = max_tmax > 42,
          max_temp_44 = max_tmax > 44) %>% 
@@ -306,9 +302,6 @@ max_temp_probs <- mozambique_s_daily %>%
             prob_max_temp_42 = sum(max_temp_42, na.rm = TRUE)/n(),
             prob_max_temp_44 = sum(max_temp_44, na.rm = TRUE)/n())
 
-write.csv(max_temp_probs, here("output", "i.table_4_max_temp_exceed_nov_jan.csv"), 
-          row.names = FALSE)
-
 # Table 4: Season start date probabilities and seasonal rainfall
 
 summary_probs <- combined_rain_summaries_2 %>%
@@ -316,12 +309,9 @@ summary_probs <- combined_rain_summaries_2 %>%
          start_dec_15 = start_rain_dry >= 137,
          total_rain_700 = total_rain > 700) %>% 
   group_by(station) %>%
-  summarise(prob_start_dec_1 = sum(start_dec_1, na.rm = TRUE)/n(),
-            prob_start_dec_15 = sum(start_dec_15, na.rm = TRUE)/n(),
-            prob_total_rain_700 = sum(total_rain_700, na.rm = TRUE)/n())
-
-write.csv(summary_probs, here("output", "j.table_4_season_dates_season_rainfall.csv"), 
-          row.names = FALSE)
+  summarise(prob_start_dec_1 = sum(start_dec_1, na.rm = TRUE)/na_non_na(start_dec_1),
+            prob_start_dec_15 = sum(start_dec_15, na.rm = TRUE)/na_non_na(start_dec_15),
+            prob_total_rain_700 = sum(total_rain_700, na.rm = TRUE)/na_non_na(total_rain_700))
 
 # Table 4: Daily rainfall exceeding 150mm
 
@@ -330,7 +320,11 @@ max_prec_probs <- mozambique_s_daily %>%
   summarise(max_rain = max(Prec, na.rm = TRUE)) %>% 
   mutate(max_rain_150 = max_rain > 150) %>% 
   group_by(station) %>%
-  summarise(prob_max_rain_150 = sum(max_rain_150, na.rm = TRUE)/n())
+  summarise(prob_max_rain_150 = sum(max_rain_150, na.rm = TRUE)/na_non_na(max_rain_150))
 
-write.csv(max_prec_probs, here("output", "k.table_4_daily_rainfall_exceed_150mm.csv"), 
+table_4 <- max_temp_probs %>% 
+  full_join(summary_probs, by = "station") %>%
+  full_join(max_prec_probs, by = "station")
+
+write.csv(table_4, here("output", "i.table_4.csv"), 
           row.names = FALSE)
