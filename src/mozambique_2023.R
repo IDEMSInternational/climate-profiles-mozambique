@@ -6,7 +6,7 @@ library(naflex)
 
 source(here("src", "helper_funs.R"))
 
-mozambique_s_daily <- readRDS(here("data", "beira_tete_qc.RDS"))
+mozambique_s_daily <- readRDS(here("data", "moz3_qc.RDS"))
 
 # Figure 2: Mean Monthly Maximum and Minimum Temperatures
 # Missing value rule taken from  WMO Guidelines on the Calculation of Climate Normals

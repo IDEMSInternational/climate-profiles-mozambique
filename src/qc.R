@@ -5,9 +5,9 @@ library(ggplot2)
 
 source(here("src", "helper_funs.R"))
 
-MZ2 <- readRDS(here("data/Beira_Tete.RDS"))
+MZ3 <- readRDS(here("data/MOZ3.RDS"))
 
-mozambique_s_daily <- MZ2$get_data_frame(data_name = "moz2")
+mozambique_s_daily <- MZ3$get_data_frame(data_name = "moz3")
 
 mozambique_s_daily$month_abbr <- factor(mozambique_s_daily$month_abbr, 
                                         levels = c(month.abb[8:12], month.abb[1:7]))
@@ -122,11 +122,6 @@ ggplot(mozambique_stack, aes(x = date, y = element, fill = !is.na(value))) +
   facet_grid(vars(station)) +
   theme(strip.text = element_text(size = 10))
 
-by_year_temp <- mozambique_s_daily %>%
-  group_by(station, s_year) %>%
-  summarise(mean_tmax = mean(Tmax, na.rm = TRUE),
-            mean_tmin = mean(Tmin, na.rm = TRUE))
-
 by_month_temp <- mozambique_s_daily %>%
   group_by(station, s_year, month_abbr) %>%
   summarise(mean_tmax = mean(Tmax, na.rm = TRUE),
@@ -145,11 +140,18 @@ if(nrow(vhigh) > 0) View(vhigh)
 # Very low tmax values
 vlow <- mozambique_s_daily %>% filter(Tmax < 10)
 if(nrow(vlow) > 0) View(vlow)
+# Chomoio 2016-05-09, tmax value too low. 
+mozambique_s_daily$Tmax[mozambique_s_daily$station == "Chimoio" & 
+                          mozambique_s_daily$date == as.Date("2016/05/09")] <- NA
 
 # Very low tmin values
 vlow <- mozambique_s_daily %>% filter(Tmin < 10)
 if(nrow(vlow) > 0) View(vlow)
 # Occasional values of 8-9 in Jun-Aug. Looks reasonable.
+# Values 5-9 are common in Chimoio.
+vlow <- mozambique_s_daily %>% filter(Tmin < 5)
+if(nrow(vlow) > 0) View(vlow)
+# Some low value in Chimoio but look possible and surrounded by similar values.
 
 # Tmin > Tmax values
 maxmin <- mozambique_s_daily %>% filter(Tmax - Tmin <= 0)
@@ -205,6 +207,18 @@ mozambique_s_daily$Tmax[mozambique_s_daily$station == "Tet" &
 mozambique_s_daily$Tmax[mozambique_s_daily$station == "Tet" & 
                           mozambique_s_daily$date == as.Date("2021/11/14")] <- NA
 
+# Chimoio 2020-01-25, Tmax looks too low, make missing
+mozambique_s_daily$Tmax[mozambique_s_daily$station == "Chimoio" & 
+                          mozambique_s_daily$date == as.Date("2020/01/25")] <- NA
+
+# Chimoio 2021-09-05, Tmin looks too high, make missing
+mozambique_s_daily$Tmin[mozambique_s_daily$station == "Chimoio" & 
+                          mozambique_s_daily$date == as.Date("2021/09/05")] <- NA
+
+# Chimoio 2022-04-22, Tmin looks too high, make missing
+mozambique_s_daily$Tmin[mozambique_s_daily$station == "Chimoio" & 
+                          mozambique_s_daily$date == as.Date("2022/04/22")] <- NA
+
 # Recheck Tmin > Tmax values after corrections
 maxmin <- mozambique_s_daily %>% filter(Tmax - Tmin <= 0)
 if(nrow(maxmin) > 0) View(maxmin)
@@ -225,7 +239,11 @@ bigdiff <- mozambique_daily_lags %>%
   filter(abs(tmin_diff) > 10 | abs(tmin_diff2) > 10) %>%
   dplyr::select(station, date, Tmax, tmax_diff, Tmin, tmin_diff)
 if(nrow(bigdiff) > 0) View(bigdiff)
-# No large differences over 11.5. Do not remove values.
+# Generally no large differences over 11.5. Do not remove values.
+
+# Chimoio 2018-01-02, Tmin looks too high, make missing
+mozambique_s_daily$Tmin[mozambique_s_daily$station == "Chimoio" & 
+                          mozambique_s_daily$date == as.Date("2018/01/02")] <- NA
 
 # Consecutive values check
 consec_check <- mozambique_s_daily %>% 
@@ -236,19 +254,31 @@ consec_check <- mozambique_s_daily %>%
   dplyr::select(station, date, Tmin, same_tmin, Tmax, same_tmax)
 if(nrow(consec_check) > 0) View(consec_check)
 # No more than 2 consecutive tmax values
-# Some 3 consecutive tmin values. One 4 consec and one 5 consec but these are whole numbers so likely rounding problem.
+# Some 3 consecutive tmin values. Two 4 consec and one 5 consec but these are whole numbers so likely rounding problem.
 # Do not correct values.
 
 # homogeneity and trend checks
-ggplot(mozambique_s_daily, aes(x = factor(s_year), y = Tmin)) +
+ggplot(mozambique_s_daily, aes(x = factor(year), y = Tmin)) +
   geom_boxplot(varwidth = TRUE) + 
   facet_grid(vars(station))
 
-ggplot(mozambique_s_daily, aes(x = factor(s_year), y = Tmax)) +
+ggplot(mozambique_s_daily, aes(x = factor(year), y = Tmax)) +
   geom_boxplot(varwidth = TRUE) + 
   facet_grid(vars(station))
-# No unnatural changes observed.
+# No unnatural changes observed apart from Chimoio Tmin and Tmax sudden drop from 1978 to 1979.
+# Filter data to start in 1979.
+mozambique_s_daily_filter <- mozambique_s_daily %>% 
+  filter(!(station == "Chimoio" & year < 1979))
 
-mozambique_s_daily$station <- forcats::fct_recode(mozambique_s_daily$station, Tete = "Tet")
+# recheck homogeneity and trend checks
+ggplot(mozambique_s_daily_filter, aes(x = factor(year), y = Tmin)) +
+  geom_boxplot(varwidth = TRUE) + 
+  facet_grid(vars(station))
 
-saveRDS(mozambique_s_daily, here("data", "beira_tete_qc.RDS"))
+ggplot(mozambique_s_daily_filter, aes(x = factor(year), y = Tmax)) +
+  geom_boxplot(varwidth = TRUE) + 
+  facet_grid(vars(station))
+
+mozambique_s_daily_filter$station <- forcats::fct_recode(mozambique_s_daily_filter$station, Tete = "Tet")
+
+saveRDS(mozambique_s_daily_filter, here("data", "moz3_qc.RDS"))
